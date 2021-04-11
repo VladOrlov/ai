@@ -1,0 +1,10 @@
+package org.jvo.ai
+
+trait PourOverDirection extends Enumeration
+
+case object FromBarrelOneToBarrelTwo extends PourOverDirection
+case object FromBarrelTwoToBarrelOne extends PourOverDirection
+case object FromBarrelOneToBarrelThree extends PourOverDirection
+case object FromBarrelThreeToBarrelOne extends PourOverDirection
+case object FromBarrelTwoToBarrelThree extends PourOverDirection
+case object FromBarrelThreeToBarrelTwo extends PourOverDirection

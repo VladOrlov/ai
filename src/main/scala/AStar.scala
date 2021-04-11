@@ -1,5 +1,6 @@
 package org.jvo.ai
 
+import State.getStateAfterPourOver
 import scala.annotation.tailrec
 
 object AStar {
@@ -54,6 +55,7 @@ object AStar {
   }
 
   private def printFastestSolution(maybePathNode: Option[PathNode]): Unit = {
+    println("Fastest solution is:")
     restorePathRecursively(maybePathNode)
       .zip(Stream from 1)
       .foreach {
@@ -96,18 +98,12 @@ object AStar {
     val State(barrel1, barrel2, barrel3) = pathNode.state
 
     List(
-      barrel1.pourOverToBarrel(barrel2)
-        .map(result => State(barrel1 = result.sourceBarrel, barrel2 = result.targetBarrel, barrel3 = barrel3)),
-      barrel1.pourOverToBarrel(barrel3)
-        .map(result => State(barrel1 = result.sourceBarrel, barrel2 = barrel2, barrel3 = result.targetBarrel)),
-      barrel2.pourOverToBarrel(barrel1)
-        .map(result => State(barrel1 = result.targetBarrel, barrel2 = result.sourceBarrel, barrel3 = barrel3)),
-      barrel2.pourOverToBarrel(barrel3)
-        .map(result => State(barrel1 = barrel1, barrel2 = result.sourceBarrel, barrel3 = result.targetBarrel)),
-      barrel3.pourOverToBarrel(barrel1)
-        .map(result => State(barrel1 = result.targetBarrel, barrel2 = barrel2, barrel3 = result.sourceBarrel)),
-      barrel3.pourOverToBarrel(barrel2)
-        .map(result => State(barrel1 = barrel1, barrel2 = result.targetBarrel, barrel3 = result.sourceBarrel))
+      barrel1.pourOverToBarrel(barrel2, FromBarrelOneToBarrelTwo).map(r => getStateAfterPourOver(r)(barrel3)),
+      barrel1.pourOverToBarrel(barrel3, FromBarrelOneToBarrelThree).map(r => getStateAfterPourOver(r)(barrel2)),
+      barrel2.pourOverToBarrel(barrel1, FromBarrelTwoToBarrelOne).map(r => getStateAfterPourOver(r)(barrel3)),
+      barrel2.pourOverToBarrel(barrel3, FromBarrelTwoToBarrelThree).map(r => getStateAfterPourOver(r)(barrel1)),
+      barrel3.pourOverToBarrel(barrel1, FromBarrelThreeToBarrelOne).map(r => getStateAfterPourOver(r)(barrel2)),
+      barrel3.pourOverToBarrel(barrel2, FromBarrelThreeToBarrelTwo).map(r => getStateAfterPourOver(r)(barrel1))
     ).flatten
   }
 
@@ -119,31 +115,5 @@ object AStar {
       step = pathNode.step + 1,
       heuristics = heuristics,
       cost = pathNode.step + 1 + heuristics)
-  }
-
-  private def pourOverLiquid(sourceBarrel: Barrel, targetBarrel: Barrel): Option[PourOverResult] = {
-
-    isTransfusionPossible(sourceBarrel, targetBarrel) match {
-      case true =>
-        val newTargetBarrelVolume = sourceBarrel.currentVolume + targetBarrel.currentVolume
-
-        Option(if (newTargetBarrelVolume > targetBarrel.maxVolume) {
-          PourOverResult(
-            sourceBarrel = sourceBarrel.copy(currentVolume = newTargetBarrelVolume - targetBarrel.maxVolume),
-            targetBarrel = targetBarrel.copy(currentVolume = targetBarrel.maxVolume)
-          )
-        } else {
-          PourOverResult(
-            sourceBarrel = sourceBarrel.copy(currentVolume = 0),
-            targetBarrel = targetBarrel.copy(currentVolume = newTargetBarrelVolume)
-          )
-        })
-      case false =>
-        None
-    }
-  }
-
-  private def isTransfusionPossible(sourceBarrel: Barrel, targetBarrel: Barrel): Boolean = {
-    sourceBarrel.currentVolume > 0 && targetBarrel.currentVolume != targetBarrel.maxVolume
   }
 }
