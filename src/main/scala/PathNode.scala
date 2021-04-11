@@ -2,16 +2,17 @@ package org.jvo.ai
 
 case class PathNode(state: State,
                     previousPathNode: Option[PathNode],
-                   //g(x)
+                    //g(x)
                     step: Int,
-                   //h(x)
+                    //h(x)
                     heuristics: Int,
-                   //f(x)
+                    //f(x)
                     cost: Int)
 
 
 object PathNode {
-  implicit class ReachPathNode(pathNode: PathNode) extends Ordered [PathNode]{
+
+  implicit class ReachPathNode(pathNode: PathNode) extends Ordered[PathNode] {
     override def compare(that: PathNode): Int = {
       if (pathNode.cost == that.cost)
         0
@@ -21,4 +22,5 @@ object PathNode {
         -1
     }
   }
+
 }

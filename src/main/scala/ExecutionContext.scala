@@ -6,8 +6,9 @@ case class ExecutionContext(endState: State,
                             passedStates: MutableSet[State] = MutableSet(),
                             nonVisitedNodes: MutableSet[PathNode] = MutableSet())
 
-object ExecutionContext{
-  implicit class ReachExecutionContext(executionContext: ExecutionContext){
+object ExecutionContext {
+
+  implicit class ReachExecutionContext(executionContext: ExecutionContext) {
 
     def addPassedState(implicit state: State): Boolean = {
       executionContext.passedStates.add(state)
@@ -32,5 +33,10 @@ object ExecutionContext{
         .sortBy(_.cost)
         .headOption
     }
+
+    def getCurrentStep: Int = {
+      executionContext.passedStates.count(_ => true)
+    }
   }
+
 }

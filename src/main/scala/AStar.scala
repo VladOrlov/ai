@@ -45,8 +45,10 @@ object AStar {
   private def evaluatePathAndUpdateExecutionContext(executionContext: ExecutionContext)(implicit pathNode: PathNode): Seq[PathNode] = {
     executionContext.updateContext
     implicit val availablePath: Seq[PathNode] = getAvailablePath(pathNode, executionContext).sortBy(_.cost)
-    availablePath.foreach(println)
     executionContext.addNonVisitedNodes
+
+    println(s"step: ${executionContext.getCurrentStep}, pathNode: $pathNode")
+//    availablePath.foreach(println)
 
     availablePath
   }
@@ -83,31 +85,30 @@ object AStar {
     )
   }
 
-  def getAvailablePath(pathNode: PathNode, executionContext: ExecutionContext): Seq[PathNode] = {
+  private def getAvailablePath(pathNode: PathNode, executionContext: ExecutionContext): Seq[PathNode] = {
     getPossibleNewStates(pathNode)
-      .flatten
       .filterNot(executionContext.passedStates.contains)
       .map(state => createNewPathNode(pathNode, state))
   }
 
-  private def getPossibleNewStates(pathNode: PathNode): Seq[Option[State]] = {
+  private def getPossibleNewStates(pathNode: PathNode): Seq[State] = {
 
     val State(barrel1, barrel2, barrel3) = pathNode.state
 
     List(
-      pourOverLiquid(barrel1, barrel2)
+      barrel1.pourOverToBarrel(barrel2)
         .map(result => State(barrel1 = result.sourceBarrel, barrel2 = result.targetBarrel, barrel3 = barrel3)),
-      pourOverLiquid(barrel1, barrel3)
+      barrel1.pourOverToBarrel(barrel3)
         .map(result => State(barrel1 = result.sourceBarrel, barrel2 = barrel2, barrel3 = result.targetBarrel)),
-      pourOverLiquid(barrel2, barrel1)
+      barrel2.pourOverToBarrel(barrel1)
         .map(result => State(barrel1 = result.targetBarrel, barrel2 = result.sourceBarrel, barrel3 = barrel3)),
-      pourOverLiquid(barrel2, barrel3)
+      barrel2.pourOverToBarrel(barrel3)
         .map(result => State(barrel1 = barrel1, barrel2 = result.sourceBarrel, barrel3 = result.targetBarrel)),
-      pourOverLiquid(barrel3, barrel1)
+      barrel3.pourOverToBarrel(barrel1)
         .map(result => State(barrel1 = result.targetBarrel, barrel2 = barrel2, barrel3 = result.sourceBarrel)),
-      pourOverLiquid(barrel3, barrel2)
+      barrel3.pourOverToBarrel(barrel2)
         .map(result => State(barrel1 = barrel1, barrel2 = result.targetBarrel, barrel3 = result.sourceBarrel))
-    )
+    ).flatten
   }
 
   private def createNewPathNode(pathNode: PathNode, state: State) = {
@@ -120,25 +121,23 @@ object AStar {
       cost = pathNode.step + 1 + heuristics)
   }
 
-  def pourOverLiquid(sourceBarrel: Barrel, targetBarrel: Barrel): Option[PourOverResult] = {
+  private def pourOverLiquid(sourceBarrel: Barrel, targetBarrel: Barrel): Option[PourOverResult] = {
 
     isTransfusionPossible(sourceBarrel, targetBarrel) match {
       case true =>
         val newTargetBarrelVolume = sourceBarrel.currentVolume + targetBarrel.currentVolume
 
-        Some(
-          if (newTargetBarrelVolume > targetBarrel.maxVolume) {
-            PourOverResult(
-              sourceBarrel = sourceBarrel.copy(currentVolume = newTargetBarrelVolume - targetBarrel.maxVolume),
-              targetBarrel = targetBarrel.copy(currentVolume = targetBarrel.maxVolume)
-            )
-          } else {
-            PourOverResult(
-              sourceBarrel = sourceBarrel.copy(currentVolume = 0),
-              targetBarrel = targetBarrel.copy(currentVolume = newTargetBarrelVolume)
-            )
-          }
-        )
+        Option(if (newTargetBarrelVolume > targetBarrel.maxVolume) {
+          PourOverResult(
+            sourceBarrel = sourceBarrel.copy(currentVolume = newTargetBarrelVolume - targetBarrel.maxVolume),
+            targetBarrel = targetBarrel.copy(currentVolume = targetBarrel.maxVolume)
+          )
+        } else {
+          PourOverResult(
+            sourceBarrel = sourceBarrel.copy(currentVolume = 0),
+            targetBarrel = targetBarrel.copy(currentVolume = newTargetBarrelVolume)
+          )
+        })
       case false =>
         None
     }
